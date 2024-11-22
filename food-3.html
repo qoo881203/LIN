@@ -29,51 +29,63 @@
             white-space: pre-wrap;
         }
     </style>
-    <!-- 引入 Firebase SDK -->
-    <script src="https://www.gstatic.com/firebasejs/9.6.1/firebase-app.js"></script>
-    <script src="https://www.gstatic.com/firebasejs/9.6.1/firebase-database.js"></script>
-    <script src="https://maps.googleapis.com/maps/api/js?key=YOUR_API_KEY&callback=initMap" async defer></script>
-</head>
-<body>
-    <h1>隨機美食選擇器</h1>
-    <button onclick="clearAllFoodsDisplay(); pickRandomFood()">選擇今天的美食</button>
-    <button onclick="clearAllFoodsDisplay(); addFood()">增加美食選項</button>
-    <button onclick="clearAllFoodsDisplay(); removeFood()">刪除美食選項</button>
-    <button onclick="clearAllFoodsDisplay(); queryFood()">查詢美食選項</button>
-    <button onclick="listAllFoods()">一鍵查詢所有美食選項</button>
-    <button onclick="navigateToFood()">導航至選擇的美食</button>
-    <div id="food-display"></div>
-    <div id="all-foods-display"></div>
+    <!-- 使用 ES6 模組化方式引入 Firebase SDK -->
+    <script type="module">
+        // 引入 Firebase SDK 模組
+        import { initializeApp } from "https://www.gstatic.com/firebasejs/9.6.1/firebase-app.js";
+        import { getDatabase, ref, onValue, push, set, remove } from "https://www.gstatic.com/firebasejs/9.6.1/firebase-database.js";
 
-    <script>
-        // Firebase 配置（將此部分替換為你的 Firebase 設定）
+        // Firebase 配置（請替換為你真實的 Firebase 設定）
         const firebaseConfig = {
             apiKey: "AIzaSyC6eM0-qNoaq1bM58LwbHh5RfO1bqGIjFA",
             authDomain: "food-805fe.firebaseapp.com",
             databaseURL: "https://food-805fe-default-rtdb.firebaseio.com",
             projectId: "food-805fe",
-            storageBucket: "food-805fe.firebasestorage.app",
+            storageBucket: "food-805fe.appspot.com",
             messagingSenderId: "1083735236426",
             appId: "1:1083735236426:web:756167f488afd1e88babb3"
         };
 
         // 初始化 Firebase
-        const app = firebase.initializeApp(firebaseConfig);
-        const database = firebase.database();
-        const foodsRef = database.ref('foods');
+        const app = initializeApp(firebaseConfig);
+        const database = getDatabase(app);
+        const foodsRef = ref(database, 'foods');
 
-        let foods = [];
+        let defaultFoods = [
+            "頭份胡家院牛肉麵",
+            "北門街熊川牛肉麵",
+            "御膳家傳牛肉麵",
+            "原夜市鴨肉麵",
+            "小鵲sing紅豆餅 - 東南起家店",
+            "璽子牛肉麵",
+            "牛肉王子",
+            "艷麗",
+            "肉多多",
+            "巨城美食街"
+        ];
+        let foods = [...defaultFoods];
         let selectedFood = "";
 
-        // 從 Firebase 中抓取數據並監聽變化
-        foodsRef.on('value', (snapshot) => {
+        // 初始化時，將預設的美食清單推送到 Firebase
+        onValue(foodsRef, (snapshot) => {
             const data = snapshot.val();
-            foods = data ? Object.values(data) : [];
-            console.log('美食清單已更新', foods);
-            // 如果列表正在顯示中，則更新顯示
-            if (document.getElementById("all-foods-display").style.display === "block") {
-                listAllFoods();
+            if (!data) {
+                // 如果 Firebase 沒有數據，使用預設清單
+                defaultFoods.forEach(food => {
+                    const newFoodKey = push(foodsRef).key;
+                    set(ref(database, 'foods/' + newFoodKey), food);
+                });
+            } else {
+                // 如果 Firebase 有數據，更新 foods
+                foods = Object.values(data);
+                console.log('美食清單已更新', foods);
+                if (document.getElementById("all-foods-display").style.display === "block") {
+                    listAllFoods();
+                }
             }
+        }, (error) => {
+            console.error("Firebase Database Read Error:", error);
+            alert("數據讀取失敗，請檢查網絡或 Firebase 設定。");
         });
 
         function pickRandomFood() {
@@ -89,14 +101,13 @@
         function addFood() {
             const newFood = prompt("請輸入想要增加的美食選項:");
             if (newFood) {
-                const newFoodKey = foodsRef.push().key;
-                foodsRef.child(newFoodKey).set(newFood, (error) => {
-                    if (error) {
+                const newFoodKey = push(ref(database, 'foods')).key;
+                set(ref(database, 'foods/' + newFoodKey), newFood)
+                    .then(() => alert("成功新增美食選項！"))
+                    .catch((error) => {
+                        console.error("新增美食選項失敗:", error);
                         alert("新增美食選項失敗，請重試。");
-                    } else {
-                        alert("成功新增美食選項！");
-                    }
-                });
+                    });
             }
         }
 
@@ -104,13 +115,12 @@
             const foodToRemove = prompt("請輸入想要刪除的美食選項:");
             const foodKey = Object.keys(foods).find(key => foods[key] === foodToRemove);
             if (foodKey) {
-                foodsRef.child(foodKey).remove((error) => {
-                    if (error) {
+                remove(ref(database, 'foods/' + foodKey))
+                    .then(() => alert("成功刪除美食選項！"))
+                    .catch((error) => {
+                        console.error("刪除美食選項失敗:", error);
                         alert("刪除美食選項失敗，請重試。");
-                    } else {
-                        alert("成功刪除美食選項！");
-                    }
-                });
+                    });
             } else {
                 alert("找不到此美食選項！");
             }
@@ -148,5 +158,16 @@
             window.open(googleMapsUrl, '_blank');
         }
     </script>
+</head>
+<body>
+    <h1>隨機美食選擇器</h1>
+    <button onclick="clearAllFoodsDisplay(); pickRandomFood()">選擇今天的美食</button>
+    <button onclick="clearAllFoodsDisplay(); addFood()">增加美食選項</button>
+    <button onclick="clearAllFoodsDisplay(); removeFood()">刪除美食選項</button>
+    <button onclick="clearAllFoodsDisplay(); queryFood()">查詢美食選項</button>
+    <button onclick="listAllFoods()">一鍵查詢所有美食選項</button>
+    <button onclick="navigateToFood()">導航至選擇的美食</button>
+    <div id="food-display"></div>
+    <div id="all-foods-display"></div>
 </body>
 </html>
