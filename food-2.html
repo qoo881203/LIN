@@ -6,7 +6,7 @@
     <title>隨機美食選擇器</title>
     <style>
         body {
-            font-family: Arial, sans-serif;
+            font-family: 'Microsoft JhengHei', Arial, sans-serif;
             text-align: center;
             margin-top: 50px;
         }
@@ -29,6 +29,7 @@
             white-space: pre-wrap;
         }
     </style>
+    <script src="https://maps.googleapis.com/maps/api/js?key=YOUR_API_KEY&callback=initMap" async defer></script>
 </head>
 <body>
     <h1>隨機美食選擇器</h1>
@@ -37,11 +38,12 @@
     <button onclick="clearAllFoodsDisplay(); removeFood()">刪除美食選項</button>
     <button onclick="clearAllFoodsDisplay(); queryFood()">查詢美食選項</button>
     <button onclick="listAllFoods()">一鍵查詢所有美食選項</button>
+    <button onclick="navigateToFood()">導航至選擇的美食</button>
     <div id="food-display"></div>
     <div id="all-foods-display"></div>
 
     <script>
-        let foods = [
+        let foods = JSON.parse(localStorage.getItem('foods')) || [
             "頭份胡家院牛肉麵",
             "北門街熊川牛肉麵",
             "御膳家傳牛肉麵",
@@ -53,6 +55,7 @@
             "肉多多",
             "巨城美食街"
         ];
+        let selectedFood = "";
 
         function pickRandomFood() {
             if (foods.length === 0) {
@@ -60,7 +63,7 @@
                 return;
             }
             const randomIndex = Math.floor(Math.random() * foods.length);
-            const selectedFood = foods[randomIndex];
+            selectedFood = foods[randomIndex];
             document.getElementById("food-display").innerText = selectedFood;
         }
 
@@ -68,6 +71,7 @@
             const newFood = prompt("請輸入想要增加的美食選項:");
             if (newFood) {
                 foods.push(newFood);
+                updateFoodsOnServer();
             }
         }
 
@@ -76,6 +80,7 @@
             const index = foods.indexOf(foodToRemove);
             if (index !== -1) {
                 foods.splice(index, 1);
+                updateFoodsOnServer();
             } else {
                 alert("找不到此美食選項！");
             }
@@ -101,6 +106,20 @@
 
         function clearAllFoodsDisplay() {
             document.getElementById("all-foods-display").style.display = "none";
+        }
+
+        function navigateToFood() {
+            if (!selectedFood) {
+                alert("請先選擇一個美食選項！");
+                return;
+            }
+            const query = encodeURIComponent(selectedFood);
+            const googleMapsUrl = `https://www.google.com/maps/search/?api=1&query=${query}`;
+            window.open(googleMapsUrl, '_blank');
+        }
+
+        function updateFoodsOnServer() {
+            localStorage.setItem('foods', JSON.stringify(foods));
         }
     </script>
 </body>
