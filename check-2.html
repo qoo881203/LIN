@@ -27,6 +27,7 @@
             max-height: none;
             overflow: visible;
             white-space: pre-wrap;
+            display: none;
         }
     </style>
 </head>
@@ -102,10 +103,13 @@
         "欣盛光電股份有限公司",
         "聯合骨科器材股份有限公司",
         "台灣杜邦股份有限公司",
-        "住華科技股份有限公司-新竹分公司"    
+        "住華科技股份有限公司-新竹分公司"
         ];
 
         function pickRandomCheck() {
+            // 關閉所有查核項目顯示
+            document.getElementById("all-checks-display").style.display = "none";
+            
             if (checks.length === 0) {
                 document.getElementById("check-display").innerText = "查核選項清單為空！請先增加查核選項。";
                 return;
@@ -147,6 +151,7 @@
             } else {
                 document.getElementById("all-checks-display").innerText = "目前所有查核選項:\n" + checks.join("\n");
             }
+            document.getElementById("all-checks-display").style.display = "block";
         }
     </script>
 </body>
