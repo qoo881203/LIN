@@ -1,0 +1,75 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>隨機美食選擇器</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            text-align: center;
+            margin-top: 50px;
+        }
+        button {
+            padding: 10px 20px;
+            font-size: 18px;
+            cursor: pointer;
+            margin: 5px;
+        }
+        #food-display {
+            margin-top: 20px;
+            font-size: 24px;
+            font-weight: bold;
+        }
+    </style>
+</head>
+<body>
+    <h1>隨機美食選擇器</h1>
+    <button onclick="pickRandomFood()">選擇今天的美食</button>
+    <button onclick="addFood()">增加美食選項</button>
+    <button onclick="removeFood()">刪除美食選項</button>
+    <div id="food-display"></div>
+
+    <script>
+        let foods = [
+            "頭份胡家院牛肉麵",
+            "北門街熊川牛肉麵",
+            "御膳家傳牛肉麵",
+            "原夜市鴨肉麵",
+            "小鵲sing紅豆餅 - 東南起家店",
+            "璽子牛肉麵",
+            "牛肉王子",
+            "艷麗",
+            "肉多多",
+            "巨城美食街"
+        ];
+
+        function pickRandomFood() {
+            if (foods.length === 0) {
+                document.getElementById("food-display").innerText = "美食選項清單為空！請先增加美食選項。";
+                return;
+            }
+            const randomIndex = Math.floor(Math.random() * foods.length);
+            const selectedFood = foods[randomIndex];
+            document.getElementById("food-display").innerText = selectedFood;
+        }
+
+        function addFood() {
+            const newFood = prompt("請輸入想要增加的美食選項:");
+            if (newFood) {
+                foods.push(newFood);
+            }
+        }
+
+        function removeFood() {
+            const foodToRemove = prompt("請輸入想要刪除的美食選項:");
+            const index = foods.indexOf(foodToRemove);
+            if (index !== -1) {
+                foods.splice(index, 1);
+            } else {
+                alert("找不到此美食選項！");
+            }
+        }
+    </script>
+</body>
+</html>
