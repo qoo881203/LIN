@@ -1,0 +1,87 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>隨機查核選擇器</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            text-align: center;
+            margin-top: 50px;
+        }
+        button {
+            padding: 10px 20px;
+            font-size: 18px;
+            cursor: pointer;
+            margin: 5px;
+        }
+        #check-display {
+            margin-top: 20px;
+            font-size: 24px;
+            font-weight: bold;
+        }
+    </style>
+</head>
+<body>
+    <h1>隨機查核選擇器</h1>
+    <button onclick="pickRandomCheck()">選擇今天的查核</button>
+    <button onclick="addCheck()">增加查核選項</button>
+    <button onclick="removeCheck()">刪除查核選項</button>
+    <button onclick="queryCheck()">查詢查核選項</button>
+    <button onclick="listAllChecks()">一鍵查詢所有查核選項</button>
+    <div id="check-display"></div>
+
+    <script>
+        let checks = [
+            "1",
+            "2",
+            "3"
+        ];
+
+        function pickRandomCheck() {
+            if (checks.length === 0) {
+                document.getElementById("check-display").innerText = "查核選項清單為空！請先增加查核選項。";
+                return;
+            }
+            const randomIndex = Math.floor(Math.random() * checks.length);
+            const selectedCheck = checks[randomIndex];
+            document.getElementById("check-display").innerText = selectedCheck;
+        }
+
+        function addCheck() {
+            const newCheck = prompt("請輸入想要增加的查核選項:");
+            if (newCheck) {
+                checks.push(newCheck);
+            }
+        }
+
+        function removeCheck() {
+            const checkToRemove = prompt("請輸入想要刪除的查核選項:");
+            const index = checks.indexOf(checkToRemove);
+            if (index !== -1) {
+                checks.splice(index, 1);
+            } else {
+                alert("找不到此查核選項！");
+            }
+        }
+
+        function queryCheck() {
+            const queryCheck = prompt("請輸入想要查詢的查核選項:");
+            if (checks.includes(queryCheck)) {
+                alert(`查核選項 "${queryCheck}" 存在於清單中。`);
+            } else {
+                alert(`查核選項 "${queryCheck}" 不存在於清單中。`);
+            }
+        }
+
+        function listAllChecks() {
+            if (checks.length === 0) {
+                alert("查核選項清單為空！");
+            } else {
+                alert("目前所有查核選項:\n" + checks.join("\n"));
+            }
+        }
+    </script>
+</body>
+</html>
