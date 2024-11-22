@@ -21,6 +21,14 @@
             font-size: 24px;
             font-weight: bold;
         }
+        #all-foods-display {
+            margin-top: 20px;
+            font-size: 18px;
+            max-height: none;
+            overflow: visible;
+            white-space: pre-wrap;
+            display: none;
+        }
     </style>
 </head>
 <body>
@@ -28,7 +36,10 @@
     <button onclick="pickRandomFood()">選擇今天的美食</button>
     <button onclick="addFood()">增加美食選項</button>
     <button onclick="removeFood()">刪除美食選項</button>
+    <button onclick="queryFood()">查詢美食選項</button>
+    <button onclick="listAllFoods()">一鍵查詢所有美食選項</button>
     <div id="food-display"></div>
+    <div id="all-foods-display"></div>
 
     <script>
         let foods = [
@@ -45,6 +56,9 @@
         ];
 
         function pickRandomFood() {
+            // 關閉所有美食項目顯示
+            document.getElementById("all-foods-display").style.display = "none";
+            
             if (foods.length === 0) {
                 document.getElementById("food-display").innerText = "美食選項清單為空！請先增加美食選項。";
                 return;
@@ -69,6 +83,24 @@
             } else {
                 alert("找不到此美食選項！");
             }
+        }
+
+        function queryFood() {
+            const queryFood = prompt("請輸入想要查詢的美食選項:");
+            if (foods.includes(queryFood)) {
+                alert(`美食選項 "${queryFood}" 存在於清單中。`);
+            } else {
+                alert(`美食選項 "${queryFood}" 不存在於清單中。`);
+            }
+        }
+
+        function listAllFoods() {
+            if (foods.length === 0) {
+                document.getElementById("all-foods-display").innerText = "美食選項清單為空！";
+            } else {
+                document.getElementById("all-foods-display").innerText = "目前所有美食選項:\n" + foods.join("\n");
+            }
+            document.getElementById("all-foods-display").style.display = "block";
         }
     </script>
 </body>
