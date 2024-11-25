@@ -10,7 +10,7 @@
             text-align: center;
             margin: 0;
             padding: 0;
-            background-image: url('https://raw.githubusercontent.com/qoo881203/LIN/main/mario.jpg');
+            background-image: url('https://raw.githubusercontent.com/qoo881203/LIN/main/Mario Kart 8 DX_wallpaper_02.jpg');
             background-size: cover;
             background-repeat: no-repeat;
             background-attachment: fixed;
@@ -39,23 +39,32 @@
             font-size: 20px;
             font-weight: bold;
             color: #000000;
-            background-color: rgba(255, 255, 255, 0.8);
+            background-color: rgba(255, 255, 255, 0.8);/* 這行設置了背景為白色且帶透明度 */
             padding: 10px;
             border-radius: 5px;
             display: none;
+        }
+        #current-region {
+            position: absolute;
+            top: 10px;
+            right: 10px;
+            font-size: 18px;
+            background-color: rgba(0, 0, 0, 0.5);
+            color: #ffffff;
+            padding: 10px;
+            border-radius: 5px;
         }
     </style>
     <!-- 加入 Firebase 函式庫 -->
     <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-app.js"></script>
     <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-database.js"></script>
-    <!-- 引入自訂的 JavaScript 檔案 -->
-    
 </head>
 <body>
-    <div id="current-region" style="position: absolute; top: 10px; right: 10px; font-size: 18px; background-color: rgba(0, 0, 0, 0.5); color: #ffffff; padding: 10px; border-radius: 5px;">當前區域：桃竹苗</div>
+    <div id="current-region">當前區域：桃竹苗</div>
     <div class="container">
         <h1>隨機美食選擇器</h1>
         <div id="region-buttons">
+            <!-- 區域切換按鈕，點擊可切換不同的區域 -->
             <button onclick="changeRegion('桃竹苗')">桃竹苗</button>
             <button onclick="changeRegion('北北基')">北北基</button>
             <button onclick="changeRegion('中彰投')">中彰投</button>
@@ -64,11 +73,12 @@
             <button onclick="changeRegion('宜蘭')">宜蘭</button>
             <button onclick="changeRegion('花東')">花東</button>
         </div>
+        <!-- 功能按鈕 -->
         <button onclick="clearAllFoodsDisplay(); pickRandomFood()">選擇今天的美食</button>
         <button onclick="clearAllFoodsDisplay(); addFood()">增加美食選項</button>
         <button onclick="clearAllFoodsDisplay(); removeFood()">刪除美食選項</button>
         <button onclick="clearAllFoodsDisplay(); queryFood()">查詢美食選項</button>
-        <button onclick="listAllFoods()">一鍵查詢所有美食選項</button>
+        <button onclick="listAllFoods()">一鍵查詢該區域所有美食選項</button>
         <button onclick="navigateToFood()">導航至選擇的美食</button>
         <div id="food-display"></div>
         <div id="all-foods-display"></div>
@@ -95,12 +105,12 @@
         let foods = [];
         let selectedFood = "";
 
-        // 監聽資料變化
+        // 監聽資料變化，當前區域資料更新時更新 foods 變數
         function setupFoodsListener() {
             foodsRef.on('value', (snapshot) => {
                 if (snapshot.exists()) {
                     const data = snapshot.val();
-                    foods = Object.values(data || {});
+                    foods = Object.entries(data || {}).map(([key, value]) => ({ key, value }));
                 } else {
                     foods = [];
                 }
@@ -108,82 +118,75 @@
         }
         setupFoodsListener();
 
+        // 切換區域並重新監聽資料變化
         function changeRegion(region) {
-            document.getElementById('current-region').innerText = `當前區域：${region}`;
+            clearAllFoodsDisplay(); // 清除所有顯示的訊息
             currentRegion = region;
+            document.getElementById('current-region').innerText = `當前區域：${currentRegion}`;
             foodsRef = database.ref(`foods/${currentRegion}`);
             setupFoodsListener();
             alert(`已切換至 ${region} 區域的美食選項`);
         }
 
+        // 隨機選擇一個美食選項
         function pickRandomFood() {
             if (foods.length === 0) {
                 displayMessage("food-display", "美食選項清單為空！請先增加美食選項。");
                 return;
             }
             const randomIndex = Math.floor(Math.random() * foods.length);
-            selectedFood = foods[randomIndex];
+            selectedFood = foods[randomIndex].value;
             displayMessage("food-display", `今天的美食是：${selectedFood}`);
         }
 
+        // 新增一個或多個美食選項到當前區域
         function addFood() {
-            const newFood = prompt("請輸入想要增加的美食選項:");
-            if (newFood) {
-                foodsRef.push().set(newFood)
-                    .then(() => alert("成功新增美食選項！"))
-                    .catch(error => alert("新增失敗：" + error.message));
+            const newFoods = prompt("請輸入想要增加的美食選項（可輸入多個，用逗號分隔）:");
+            if (newFoods) {
+                const foodsArray = newFoods.split(',').map(food => food.trim()).filter(food => food.length > 0);
+                foodsArray.forEach(newFood => {
+                    const newFoodRef = foodsRef.push();
+                    newFoodRef.set(newFood)
+                        .catch(error => alert("新增失敗：" + error.message));
+                });
+                alert("成功新增美食選項！");
             }
         }
 
+        // 刪除指定的美食選項
         function removeFood() {
             const foodToRemove = prompt("請輸入想要刪除的美食選項:");
-            const foodEntry = foods.find(food => food.includes(foodToRemove));
+            const foodEntry = foods.find(food => food.value.includes(foodToRemove));
             if (foodEntry) {
-                foodsRef.orderByValue().equalTo(foodEntry).once('value', snapshot => {
-                    if (snapshot.exists()) {
-                        const updates = {};
-                        snapshot.forEach(child => {
-                            updates[child.key] = null;
-                        });
-                        foodsRef.update(updates)
-                            .then(() => alert("成功刪除美食選項！"))
-                            .catch(error => alert("刪除失敗：" + error.message));
-                    } else {
-                        alert("找不到此美食選項！");
-                    }
-                });
+                foodsRef.child(foodEntry.key).remove()
+                    .then(() => alert("成功刪除美食選項！"))
+                    .catch(error => alert("刪除失敗：" + error.message));
             } else {
                 alert("找不到此美食選項！");
             }
         }
 
+        // 查詢包含指定關鍵字的美食選項
         function queryFood() {
             const queryFood = prompt("請輸入想要查詢的美食選項關鍵字:");
-            const foundFoods = foods.filter(food => food.includes(queryFood));
+            const foundFoods = foods.filter(food => food.value.includes(queryFood));
             if (foundFoods.length > 0) {
-                alert(`找到以下美食選項包含關鍵字 "${queryFood}"：\n${foundFoods.join('\n')}`);
+                alert(`找到以下美食選項包含關鍵字 "${queryFood}"：\n${foundFoods.map(food => food.value).join('\n')}`);
             } else {
                 alert(`找不到任何包含關鍵字 "${queryFood}" 的美食選項。`);
             }
         }
 
+        // 列出當前區域的所有美食選項
         function listAllFoods() {
-            foodsRef.once('value', (snapshot) => {
-                if (snapshot.exists()) {
-                    const data = snapshot.val();
-                    let allFoodsMessage = Object.values(data).join("
-");
-                    displayMessage("all-foods-display", allFoodsMessage);
-                } else {
-                    displayMessage("all-foods-display", "美食選項清單為空！");
-                }
-            });
-                } else {
-                    displayMessage("all-foods-display", "美食選項清單為空！");
-                }
-            });
+            if (foods.length === 0) {
+                displayMessage("all-foods-display", "美食選項清單為空！");
+            } else {
+                displayMessage("all-foods-display", "目前所有美食選項:\n" + foods.map(food => food.value).join("\n"));
+            }
         }
 
+        // 導航到選擇的美食選項在地圖中的位置
         function navigateToFood() {
             if (!selectedFood) {
                 alert("請先選擇一個美食選項！");
@@ -194,12 +197,14 @@
             window.open(googleMapsUrl, '_blank');
         }
 
+        // 顯示訊息到指定的元素上
         function displayMessage(elementId, message) {
             const element = document.getElementById(elementId);
             element.innerText = message;
             element.style.display = "block";
         }
 
+        // 清除所有顯示的訊息
         function clearAllFoodsDisplay() {
             document.getElementById("food-display").style.display = "none";
             document.getElementById("all-foods-display").style.display = "none";
