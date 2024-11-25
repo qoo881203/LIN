@@ -50,11 +50,12 @@
     <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-database.js"></script>
 </head>
 <body>
+    <div id="current-region" style="position: absolute; top: 10px; right: 10px; font-size: 18px; background-color: rgba(0, 0, 0, 0.5); color: #ffffff; padding: 10px; border-radius: 5px;">當前區域：桃竹苗</div>
     <div class="container">
         <h1>隨機美食選擇器</h1>
         <div id="region-buttons">
-            <button onclick="changeRegion('北北基')">北北基</button>
             <button onclick="changeRegion('桃竹苗')">桃竹苗</button>
+            <button onclick="changeRegion('北北基')">北北基</button>
             <button onclick="changeRegion('中彰投')">中彰投</button>
             <button onclick="changeRegion('雲嘉南')">雲嘉南</button>
             <button onclick="changeRegion('高屏')">高屏</button>
@@ -97,7 +98,7 @@
             foodsRef.on('value', (snapshot) => {
                 if (snapshot.exists()) {
                     const data = snapshot.val();
-                    foods = Object.entries(data || {}).map(([key, value]) => ({ key, value }));
+                    foods = Object.values(data || {});
                 } else {
                     foods = [];
                 }
@@ -106,6 +107,7 @@
         setupFoodsListener();
 
         function changeRegion(region) {
+            document.getElementById('current-region').innerText = `當前區域：${region}`;
             currentRegion = region;
             foodsRef = database.ref(`foods/${currentRegion}`);
             setupFoodsListener();
@@ -118,15 +120,14 @@
                 return;
             }
             const randomIndex = Math.floor(Math.random() * foods.length);
-            selectedFood = foods[randomIndex].value;
+            selectedFood = foods[randomIndex];
             displayMessage("food-display", `今天的美食是：${selectedFood}`);
         }
 
         function addFood() {
             const newFood = prompt("請輸入想要增加的美食選項:");
             if (newFood) {
-                const newFoodRef = foodsRef.push();
-                newFoodRef.set(newFood)
+                foodsRef.push().set(newFood)
                     .then(() => alert("成功新增美食選項！"))
                     .catch(error => alert("新增失敗：" + error.message));
             }
@@ -134,11 +135,21 @@
 
         function removeFood() {
             const foodToRemove = prompt("請輸入想要刪除的美食選項:");
-            const foodEntry = foods.find(food => food.value.includes(foodToRemove));
+            const foodEntry = foods.find(food => food.includes(foodToRemove));
             if (foodEntry) {
-                foodsRef.child(foodEntry.key).remove()
-                    .then(() => alert("成功刪除美食選項！"))
-                    .catch(error => alert("刪除失敗：" + error.message));
+                foodsRef.orderByValue().equalTo(foodEntry).once('value', snapshot => {
+                    if (snapshot.exists()) {
+                        const updates = {};
+                        snapshot.forEach(child => {
+                            updates[child.key] = null;
+                        });
+                        foodsRef.update(updates)
+                            .then(() => alert("成功刪除美食選項！"))
+                            .catch(error => alert("刪除失敗：" + error.message));
+                    } else {
+                        alert("找不到此美食選項！");
+                    }
+                });
             } else {
                 alert("找不到此美食選項！");
             }
@@ -146,20 +157,29 @@
 
         function queryFood() {
             const queryFood = prompt("請輸入想要查詢的美食選項關鍵字:");
-            const foundFoods = foods.filter(food => food.value.includes(queryFood));
+            const foundFoods = foods.filter(food => food.includes(queryFood));
             if (foundFoods.length > 0) {
-                alert(`找到以下美食選項包含關鍵字 "${queryFood}"：\n${foundFoods.map(food => food.value).join('\n')}`);
+                alert(`找到以下美食選項包含關鍵字 "${queryFood}"：\n${foundFoods.join('\n')}`);
             } else {
                 alert(`找不到任何包含關鍵字 "${queryFood}" 的美食選項。`);
             }
         }
 
         function listAllFoods() {
-            if (foods.length === 0) {
-                displayMessage("all-foods-display", "美食選項清單為空！");
-            } else {
-                displayMessage("all-foods-display", "目前所有美食選項:\n" + foods.map(food => food.value).join("\n"));
-            }
+            database.ref('foods').once('value', (snapshot) => {
+                if (snapshot.exists()) {
+                    const data = snapshot.val();
+                    let allFoodsMessage = "";
+                    for (const region in data) {
+                        allFoodsMessage += `【${region}】\n`;
+                        const regionFoods = data[region];
+                        allFoodsMessage += Object.values(regionFoods).map(food => food).join("\n") + "\n\n";
+                    }
+                    displayMessage("all-foods-display", allFoodsMessage);
+                } else {
+                    displayMessage("all-foods-display", "美食選項清單為空！");
+                }
+            });
         }
 
         function navigateToFood() {
