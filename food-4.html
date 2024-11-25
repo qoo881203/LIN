@@ -8,13 +8,17 @@
         body {
             font-family: 'Microsoft JhengHei', Arial, sans-serif;
             text-align: center;
-            margin-top: 50px;
+            margin: 0;
+            padding: 0;
             background-image: url('https://raw.githubusercontent.com/qoo881203/LIN/main/mario.jpg');
             background-size: cover;
             background-repeat: no-repeat;
             background-attachment: fixed;
             background-position: center;
             color: #ffffff;
+        }
+        .container {
+            margin-top: 50px;
         }
         button {
             padding: 10px 20px;
@@ -30,42 +34,42 @@
         button:hover {
             background-color: #e0e0e0;
         }
-        #food-display {
+        #food-display, #all-foods-display {
             margin-top: 20px;
-            font-size: 24px;
+            font-size: 20px;
             font-weight: bold;
-            color: #000000; /* 設為黑色 */
-        }
-        #all-foods-display {
-            margin-top: 20px;
-            font-size: 18px;
-            font-weight: bold; /* 設為加粗 */
-            color: #000000; /* 設為黑色 */
-            max-height: none;
-            overflow: visible;
-            white-space: pre-wrap;
+            color: #000000;
+            background-color: rgba(255, 255, 255, 0.8);
+            padding: 10px;
+            border-radius: 5px;
+            display: none;
         }
     </style>
+    <!-- 加入 Firebase 函式庫 -->
+    <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-app.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-database.js"></script>
 </head>
 <body>
-    <h1>隨機美食選擇器</h1>
-    <button onclick="clearAllFoodsDisplay(); pickRandomFood()">選擇今天的美食</button>
-    <button onclick="clearAllFoodsDisplay(); addFood()">增加美食選項</button>
-    <button onclick="clearAllFoodsDisplay(); removeFood()">刪除美食選項</button>
-    <button onclick="clearAllFoodsDisplay(); queryFood()">查詢美食選項</button>
-    <button onclick="listAllFoods()">一鍵查詢所有美食選項</button>
-    <button onclick="navigateToFood()">導航至選擇的美食</button>
-    <div id="food-display"></div>
-    <div id="all-foods-display"></div>
+    <div class="container">
+        <h1>隨機美食選擇器</h1>
+        <button onclick="clearAllFoodsDisplay(); pickRandomFood()">選擇今天的美食</button>
+        <button onclick="clearAllFoodsDisplay(); addFood()">增加美食選項</button>
+        <button onclick="clearAllFoodsDisplay(); removeFood()">刪除美食選項</button>
+        <button onclick="clearAllFoodsDisplay(); queryFood()">查詢美食選項</button>
+        <button onclick="listAllFoods()">一鍵查詢所有美食選項</button>
+        <button onclick="navigateToFood()">導航至選擇的美食</button>
+        <div id="food-display"></div>
+        <div id="all-foods-display"></div>
+    </div>
 
     <script>
-        // Firebase 配置（請替換為你的 Firebase 設定）
+        // Firebase 配置（替換為你的 Firebase 設定）
         const firebaseConfig = {
             apiKey: "AIzaSyC6eM0-qNoaq1bM58LwbHh5RfO1bqGIjFA",
             authDomain: "food-805fe.firebaseapp.com",
             databaseURL: "https://food-805fe-default-rtdb.firebaseio.com",
             projectId: "food-805fe",
-            storageBucket: "food-805fe.firebasestorage.app",
+            storageBucket: "food-805fe.appspot.com",
             messagingSenderId: "1083735236426",
             appId: "1:1083735236426:web:0e7d8afa0a6a8df58babb3"
         };
@@ -75,53 +79,36 @@
         const database = firebase.database();
         const foodsRef = database.ref('foods');
 
-        // 初始化成功提示
-        console.log("Firebase 已成功初始化。");
-
         let foods = [];
         let selectedFood = "";
 
-        // 從 Firebase 中抓取數據並監聽變化
+        // 監聽資料變化
         foodsRef.on('value', (snapshot) => {
             if (snapshot.exists()) {
                 const data = snapshot.val();
-                foods = data ? Object.entries(data).map(([key, value]) => ({ key, value })) : [];
-                console.log('美食清單已更新', foods);
+                foods = Object.entries(data || {}).map(([key, value]) => ({ key, value }));
             } else {
-                console.log("Firebase 中沒有任何美食數據。");
                 foods = [];
             }
-            
-            if (document.getElementById("all-foods-display").style.display === "block") {
-                listAllFoods();
-            }
-        }, (error) => {
-            console.error("Firebase Database Read Error:", error);
-            alert("數據讀取失敗，請檢查網絡或 Firebase 設定。");
         });
 
         function pickRandomFood() {
             if (foods.length === 0) {
-                document.getElementById("food-display").innerText = "美食選項清單為空！請先增加美食選項。";
+                displayMessage("food-display", "美食選項清單為空！請先增加美食選項。");
                 return;
             }
             const randomIndex = Math.floor(Math.random() * foods.length);
             selectedFood = foods[randomIndex].value;
-            document.getElementById("food-display").innerText = selectedFood;
+            displayMessage("food-display", `今天的美食是：${selectedFood}`);
         }
 
         function addFood() {
             const newFood = prompt("請輸入想要增加的美食選項:");
             if (newFood) {
                 const newFoodRef = foodsRef.push();
-                newFoodRef.set(newFood, (error) => {
-                    if (error) {
-                        console.error("新增美食選項失敗:", error);
-                        alert("新增美食選項失敗，請重試。");
-                    } else {
-                        alert("成功新增美食選項！");
-                    }
-                });
+                newFoodRef.set(newFood)
+                    .then(() => alert("成功新增美食選項！"))
+                    .catch(error => alert("新增失敗：" + error.message));
             }
         }
 
@@ -129,14 +116,9 @@
             const foodToRemove = prompt("請輸入想要刪除的美食選項:");
             const foodEntry = foods.find(food => food.value.includes(foodToRemove));
             if (foodEntry) {
-                foodsRef.child(foodEntry.key).remove((error) => {
-                    if (error) {
-                        console.error("刪除美食選項失敗:", error);
-                        alert("刪除美食選項失敗，請重試。");
-                    } else {
-                        alert("成功刪除美食選項！");
-                    }
-                });
+                foodsRef.child(foodEntry.key).remove()
+                    .then(() => alert("成功刪除美食選項！"))
+                    .catch(error => alert("刪除失敗：" + error.message));
             } else {
                 alert("找不到此美食選項！");
             }
@@ -154,15 +136,10 @@
 
         function listAllFoods() {
             if (foods.length === 0) {
-                document.getElementById("all-foods-display").innerText = "美食選項清單為空！";
+                displayMessage("all-foods-display", "美食選項清單為空！");
             } else {
-                document.getElementById("all-foods-display").innerText = "目前所有美食選項:\n" + foods.map(food => food.value).join("\n");
+                displayMessage("all-foods-display", "目前所有美食選項:\n" + foods.map(food => food.value).join("\n"));
             }
-            document.getElementById("all-foods-display").style.display = "block";
-        }
-
-        function clearAllFoodsDisplay() {
-            document.getElementById("all-foods-display").style.display = "none";
         }
 
         function navigateToFood() {
@@ -173,6 +150,17 @@
             const query = encodeURIComponent(selectedFood);
             const googleMapsUrl = `https://www.google.com/maps/search/?api=1&query=${query}`;
             window.open(googleMapsUrl, '_blank');
+        }
+
+        function displayMessage(elementId, message) {
+            const element = document.getElementById(elementId);
+            element.innerText = message;
+            element.style.display = "block";
+        }
+
+        function clearAllFoodsDisplay() {
+            document.getElementById("food-display").style.display = "none";
+            document.getElementById("all-foods-display").style.display = "none";
         }
     </script>
 </body>
